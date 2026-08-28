@@ -1,0 +1,140 @@
+    $now = time();
+
+    switch ($template) {
+        case 'feedback':
+            $title = $LANG_FORMS['template_feedback'];
+            $slug = forms_admin_unique_slug('feedback');
+            $description = $LANG_FORMS['template_feedback_description'];
+            $fields = array(
+                array(10, 'name', $LANG_FORMS['preset_name'], 'text', '', 1, ''),
+                array(20, 'email', $LANG_FORMS['preset_email'], 'email', '', 1, ''),
+                array(30, 'rating', $LANG_FORMS['preset_rating'], 'select',
+                    "excellent|" . $LANG_FORMS['rating_excellent'] . "\ngood|" . $LANG_FORMS['rating_good']
+                    . "\naverage|" . $LANG_FORMS['rating_average'] . "\npoor|" . $LANG_FORMS['rating_poor'], 0, ''),
+                array(40, 'message', $LANG_FORMS['preset_feedback'], 'textarea', '', 1, '')
+            );
+            break;
+
+        case 'event':
+            $title = $LANG_FORMS['template_event'];
+            $slug = forms_admin_unique_slug('event-registration');
+            $description = $LANG_FORMS['template_event_description'];
+            $fields = array(
+                array(10, 'intro', $LANG_FORMS['preset_event_details'], 'heading', '', 0, ''),
+                array(20, 'event_info', $LANG_FORMS['preset_event_info'], 'info', '', 0, $LANG_FORMS['preset_event_info_help']),
+                array(30, 'name', $LANG_FORMS['preset_name'], 'text', '', 1, ''),
+                array(40, 'email', $LANG_FORMS['preset_email'], 'email', '', 1, ''),
+                array(50, 'phone', $LANG_FORMS['preset_phone'], 'tel', '', 0, ''),
+                array(60, 'preferred_time', $LANG_FORMS['preset_preferred_datetime'], 'datetime', '', 0, ''),
+                array(70, 'interests', $LANG_FORMS['preset_interests'], 'checkboxes',
+                    "conference|" . $LANG_FORMS['interest_conference'] . "\nworkshop|" . $LANG_FORMS['interest_workshop']
+                    . "\nnetworking|" . $LANG_FORMS['interest_networking'], 0, ''),
+                array(80, 'consent', $LANG_FORMS['preset_consent'], 'consent', '', 1, '')
+            );
+            break;
+
+        case 'support':
+            $title = $LANG_FORMS['template_support'];
+            $slug = forms_admin_unique_slug('support-request');
+            $description = $LANG_FORMS['template_support_description'];
+            $fields = array(
+                array(10, 'name', $LANG_FORMS['preset_name'], 'text', '', 1, ''),
+                array(20, 'email', $LANG_FORMS['preset_email'], 'email', '', 1, ''),
+                array(30, 'website', $LANG_FORMS['preset_website'], 'url', '', 0, ''),
+                array(40, 'topic', $LANG_FORMS['preset_support_topic'], 'select',
+                    "technical|" . $LANG_FORMS['support_technical'] . "\naccount|" . $LANG_FORMS['support_account']
+                    . "\nbilling|" . $LANG_FORMS['support_billing'] . "\nother|" . $LANG_FORMS['support_other'], 1, ''),
+                array(50, 'subject', $LANG_FORMS['preset_subject'], 'text', '', 1, ''),
+                array(60, 'message', $LANG_FORMS['preset_message'], 'textarea', '', 1, '')
+            );
+            break;
+
+        case 'quote':
+            $title = $LANG_FORMS['template_quote'];
+            $slug = forms_admin_unique_slug('quote-request');
+            $description = $LANG_FORMS['template_quote_description'];
+            $fields = array(
+                array(10, 'contact_heading', $LANG_FORMS['preset_contact_details'], 'heading', '', 0, ''),
+                array(20, 'name', $LANG_FORMS['preset_name'], 'text', '', 1, ''),
+                array(30, 'email', $LANG_FORMS['preset_email'], 'email', '', 1, ''),
+                array(40, 'phone', $LANG_FORMS['preset_phone'], 'tel', '', 0, ''),
+                array(50, 'website', $LANG_FORMS['preset_website'], 'url', '', 0, ''),
+                array(60, 'project_heading', $LANG_FORMS['preset_project_details'], 'heading', '', 0, ''),
+                array(70, 'services', $LANG_FORMS['preset_services'], 'checkboxes',
+                    "consulting|" . $LANG_FORMS['service_consulting'] . "\ntraining|" . $LANG_FORMS['service_training']
+                    . "\ndevelopment|" . $LANG_FORMS['service_development'] . "\nother|" . $LANG_FORMS['service_other'], 1, ''),
+                array(80, 'deadline', $LANG_FORMS['preset_deadline'], 'date', '', 0, ''),
+                array(90, 'message', $LANG_FORMS['preset_project_description'], 'textarea', '', 1, ''),
+                array(100, 'consent', $LANG_FORMS['preset_consent'], 'consent', '', 1, '')
+            );
+            break;
+
+        case 'contact':
+        default:
+            $title = $LANG_FORMS['template_contact'];
+            $slug = forms_admin_unique_slug('contact');
+            $description = $LANG_FORMS['template_contact_description'];
+            $fields = array(
+                array(10, 'name', $LANG_FORMS['preset_name'], 'text', '', 1, ''),
+                array(20, 'email', $LANG_FORMS['preset_email'], 'email', '', 1, ''),
+                array(30, 'phone', $LANG_FORMS['preset_phone'], 'tel', '', 0, ''),
+                array(40, 'subject', $LANG_FORMS['preset_subject'], 'text', '', 1, ''),
+                array(50, 'message', $LANG_FORMS['preset_message'], 'textarea', '', 1, '')
+            );
+            break;
+    }
+
+    DB_query("INSERT INTO {$_TABLES['forms_definitions']} "
+        . "(slug,title,description,success_message,is_active,allow_anonymous,store_results,email_results,recipient,created,modified,owner_id) VALUES ("
+        . "'" . DB_escapeString($slug) . "','" . DB_escapeString($title) . "','" . DB_escapeString($description) . "',"
+        . "'" . DB_escapeString($LANG_FORMS['default_success']) . "',1,1,1,1,'" . DB_escapeString($recipient) . "',"
+        . $now . "," . $now . "," . (int) $_USER['uid'] . ")");
+    $formId = (int) DB_insertId();
+
+    foreach ($fields as $field) {
+        DB_query("INSERT INTO {$_TABLES['forms_fields']} "
+            . "(form_id,field_order,name,label,type,options,placeholder,help_text,is_required,is_active) VALUES ("
+            . $formId . "," . (int) $field[0] . ",'" . DB_escapeString($field[1]) . "','"
+            . DB_escapeString($field[2]) . "','" . DB_escapeString($field[3]) . "','"
+            . DB_escapeString($field[4]) . "','','" . DB_escapeString($field[6]) . "',"
+            . (int) $field[5] . ",1)");
+    }
+
+    return $formId;
+}
+
+function forms_admin_user_label($uid)
+{
+    global $_TABLES, $LANG_FORMS;
+
+    $uid = (int) $uid;
+    if ($uid <= 1) {
+        return $LANG_FORMS['anonymous'];
+    }
+
+    $username = DB_getItem($_TABLES['users'], 'username', 'uid=' . $uid);
+    if ($username === '') {
+        return $LANG_FORMS['unknown_user'] . ' #' . $uid;
+    }
+    return $username . ' (#' . $uid . ')';
+}
+
+function forms_admin_submissions($formId)
+{
+    global $_TABLES, $LANG_FORMS;
+
+    $form = forms_get_form($formId);
+    if (!$form) {
+        return forms_admin_header($LANG_FORMS['invalid_request']) . forms_admin_footer();
+    }
+
+    $html = forms_admin_header($LANG_FORMS['stored_submissions_title'] . ': ' . $form['title']);
+    $html .= forms_admin_styles();
+    if (empty($form['store_results'])) {
+        return $html . '<p>' . forms_escape($LANG_FORMS['stored_submissions_disabled']) . '</p>' . forms_admin_footer();
+    }
+
+    $html .= '<div class="forms-admin-actions">'
+        . '<a class="uk-button" href="index.php?mode=editform&id=' . (int) $formId . '#forms-submissions">' . forms_escape($LANG_FORMS['back_to_form']) . '</a>'
+        . '<a class="uk-button" href="index.php?mode=exportcsv&form_id=' . (int) $formId . '">' . forms_escape($LANG_FORMS['export_csv']) . '</a></div>'
+        . '<p>' . forms_escape($LANG_FORMS['submissions_list_help']) . '</p>';
