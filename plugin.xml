@@ -1,0 +1,7 @@
+<plugin>
+  <pi_name>forms</pi_name>
+  <pi_display_name>Forms</pi_display_name>
+  <pi_version>0.3.2</pi_version>
+  <pi_gl_version>2.1.1</pi_gl_version>
+  <pi_homepage>https://www.geeklog.net/</pi_homepage>
+</plugin>
