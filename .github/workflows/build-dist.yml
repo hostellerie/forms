@@ -1,0 +1,97 @@
+name: Build installable Forms archive
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+    paths-ignore:
+      - 'dist/**'
+
+permissions:
+  contents: write
+
+jobs:
+  build-dist:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          fetch-depth: 0
+
+      - name: Read plugin version
+        id: version
+        shell: bash
+        run: |
+          VERSION=$(sed -n 's:.*<pi_version>\(.*\)</pi_version>.*:\1:p' plugin.xml | head -n 1)
+          if [ -z "$VERSION" ]; then
+            echo "Unable to read pi_version from plugin.xml" >&2
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Building Forms $VERSION"
+
+      - name: Build Geeklog installable archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION='${{ steps.version.outputs.version }}'
+          BUILD_DIR="$RUNNER_TEMP/forms-package"
+
+          rm -rf "$BUILD_DIR"
+          mkdir -p "$BUILD_DIR/forms" dist
+
+          # Copy only files that belong to the installable Geeklog plugin.
+          cp -a admin "$BUILD_DIR/forms/"
+          cp -a language "$BUILD_DIR/forms/"
+          cp -a public_html "$BUILD_DIR/forms/"
+          cp -a sql "$BUILD_DIR/forms/"
+          [ ! -d templates ] || cp -a templates "$BUILD_DIR/forms/"
+
+          cp autoinstall.php "$BUILD_DIR/forms/"
+          cp functions.inc "$BUILD_DIR/forms/"
+          cp install_defaults.php "$BUILD_DIR/forms/"
+          cp plugin.xml "$BUILD_DIR/forms/"
+          cp README.md "$BUILD_DIR/forms/"
+          cp LICENSE "$BUILD_DIR/forms/"
+
+          rm -f "dist/forms-${VERSION}.zip"
+          (
+            cd "$BUILD_DIR"
+            zip -r -9 "$GITHUB_WORKSPACE/dist/forms-${VERSION}.zip" forms
+          )
+
+          echo "Archive contents:"
+          unzip -l "dist/forms-${VERSION}.zip"
+
+          # Fail if the package does not have the required forms/ root folder.
+          unzip -Z1 "dist/forms-${VERSION}.zip" | grep -q '^forms/'
+
+      - name: Publish archive as workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: forms-${{ steps.version.outputs.version }}
+          path: dist/forms-${{ steps.version.outputs.version }}.zip
+          if-no-files-found: error
+
+      - name: Commit archive to dist
+        shell: bash
+        run: |
+          set -euo pipefail
+          VERSION='${{ steps.version.outputs.version }}'
+
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+          git add "dist/forms-${VERSION}.zip"
+
+          if git diff --cached --quiet; then
+            echo "dist/forms-${VERSION}.zip is already up to date."
+            exit 0
+          fi
+
+          git commit -m "Build installable Forms ${VERSION} archive"
+          git push origin HEAD:develop
