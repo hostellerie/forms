@@ -6,12 +6,29 @@ if (!SEC_hasRights('forms.admin')) {
 }
 function forms_admin_header($title)
 {
-    global $_CONF, $LANG_FORMS;
+    global $LANG_FORMS;
+
     return COM_startBlock(forms_escape($title))
         . '<p><a href="index.php">' . forms_escape($LANG_FORMS['plugin_name']) . '</a> | '
-        . '<a href="index.php?mode=editform">' . forms_escape($LANG_FORMS['new_form']) . '</a> | '
-        . '<a href="' . $_CONF['site_admin_url'] . '/configuration.php?tab-0=forms">'
-        . forms_escape($LANG_FORMS['configuration']) . '</a></p>';
+        . '<a href="index.php?mode=editform">' . forms_escape($LANG_FORMS['new_form']) . '</a></p>';
+}
+
+function forms_admin_configuration_form($buttonClass = 'uk-button')
+{
+    global $_CONF, $LANG_FORMS;
+
+    $configUrl = rtrim((string) $_CONF['site_admin_url'], '/') . '/configuration.php';
+    $class = trim((string) $buttonClass);
+    $classAttribute = $class === ''
+        ? ''
+        : ' class="' . forms_escape($class) . '"';
+
+    return '<form class="forms-admin-config-form" method="post" action="'
+        . forms_escape($configUrl) . '">'
+        . '<input type="hidden" name="conf_group" value="forms">'
+        . '<button' . $classAttribute . ' type="submit">'
+        . forms_escape($LANG_FORMS['configuration']) . '</button>'
+        . '</form>';
 }
 function forms_admin_footer() { return COM_endBlock(); }
 
@@ -21,7 +38,8 @@ function forms_admin_styles()
         . '.forms-admin-intro{background:#f7f9fb;border:1px solid #d8dee6;border-radius:4px;padding:16px 18px;margin:0 0 20px;}'
         . '.forms-admin-intro h2,.forms-admin-section h2{margin-top:0;}'
         . '.forms-admin-steps{margin:10px 0 0 20px;padding:0;}'
-        . '.forms-admin-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px;}'
+        . '.forms-admin-actions{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0 20px;align-items:center;}'
+        . '.forms-admin-config-form{display:inline-block;margin:0;}'
         . '.forms-admin-grid{display:flex;flex-wrap:wrap;gap:18px;align-items:flex-start;}'
         . '.forms-admin-main{flex:2 1 520px;min-width:280px;}'
         . '.forms-admin-side{flex:1 1 280px;min-width:250px;}'
@@ -93,8 +111,7 @@ function forms_admin_list()
     $html .= '<div class="forms-admin-actions">'
         . '<a class="uk-button uk-button-primary" href="index.php?mode=editform">'
         . forms_escape($LANG_FORMS['new_form']) . '</a>'
-        . '<a class="uk-button" href="' . $_CONF['site_admin_url'] . '/configuration.php?tab-0=forms">'
-        . forms_escape($LANG_FORMS['configuration']) . '</a>'
+        . forms_admin_configuration_form()
         . '</div>';
 
     $templateToken = SEC_createToken();
