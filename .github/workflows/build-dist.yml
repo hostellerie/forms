@@ -11,6 +11,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: forms-build-dist
+  cancel-in-progress: true
+
 jobs:
   build-dist:
     runs-on: ubuntu-latest
@@ -103,4 +107,5 @@ jobs:
           fi
 
           git commit -m "Build installable Forms ${VERSION} archive"
+          git pull --rebase origin develop
           git push origin HEAD:develop
