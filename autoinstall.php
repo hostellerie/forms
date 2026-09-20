@@ -12,7 +12,7 @@ function plugin_autoinstall_forms($pi_name)
         'info' => array(
             'pi_name'         => $piName,
             'pi_display_name' => $displayName,
-            'pi_version'      => '0.3.2',
+            'pi_version'      => '1.0.0',
             'pi_gl_version'   => '2.1.1',
             'pi_homepage'     => 'https://www.geeklog.net/'
         ),
