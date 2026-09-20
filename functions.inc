@@ -434,14 +434,186 @@ function plugin_autotags_forms($op, $content = '', $autotag = '')
     return $content;
 }
 
+
+/**
+ * Shared capability declaration for Agent, Hub, Eclipse and other consumers.
+ *
+ * Forms is intentionally a service provider rather than a general content
+ * provider. Form definitions may be discovered through bounded read-only
+ * services; stored submissions are never exposed by this declaration.
+ */
+function plugin_getcapabilities_forms()
+{
+    return array(
+        'schema' => 1,
+        'roles' => array('service'),
+        'capabilities' => array(
+            'forms.list',
+            'forms.schema.read',
+            'dashboard.summary'
+        )
+    );
+}
+
+/**
+ * Return a bounded list of active form definitions.
+ *
+ * This service exposes only public definition metadata. It never returns
+ * recipients, submission values, IP hashes, user agents or other response
+ * data.
+ */
+function service_forms_list_forms($args, &$output, &$svc_msg)
+{
+    global $_CONF, $_TABLES;
+
+    $output = array();
+    $svc_msg = '';
+
+    $limit = 50;
+    if (is_array($args) && isset($args['limit'])) {
+        $limit = max(1, min(100, (int) $args['limit']));
+    }
+
+    $result = DB_query(
+        "SELECT id,slug,title,description,created,modified "
+        . "FROM {$_TABLES['forms_definitions']} "
+        . "WHERE is_active = 1 ORDER BY title ASC LIMIT " . $limit,
+        1
+    );
+    if (DB_error()) {
+        $svc_msg = 'Unable to read Forms definitions.';
+        return false;
+    }
+
+    while ($row = DB_fetchArray($result)) {
+        $output[] = array(
+            'id' => (int) $row['id'],
+            'slug' => $row['slug'],
+            'title' => $row['title'],
+            'description' => $row['description'],
+            'url' => $_CONF['site_url'] . '/forms/index.php?f=' . rawurlencode($row['slug']),
+            'created' => (int) $row['created'],
+            'modified' => (int) $row['modified']
+        );
+    }
+
+    return true;
+}
+
+/**
+ * Return the schema of one active form without submission/private delivery data.
+ */
+function service_forms_schema_read_forms($args, &$output, &$svc_msg)
+{
+    global $_CONF;
+
+    $output = array();
+    $svc_msg = '';
+
+    $identifier = '';
+    if (is_array($args)) {
+        if (!empty($args['slug'])) {
+            $identifier = forms_slugify($args['slug']);
+        } elseif (!empty($args['id'])) {
+            $identifier = (int) $args['id'];
+        }
+    }
+
+    if ($identifier === '' || $identifier === 0) {
+        $svc_msg = 'A form id or slug is required.';
+        return false;
+    }
+
+    $form = forms_get_form($identifier);
+    if (!$form || empty($form['is_active'])) {
+        $svc_msg = 'Form not found or inactive.';
+        return false;
+    }
+
+    $fields = forms_get_fields($form['id']);
+    $schemaFields = array();
+    foreach ($fields as $field) {
+        $schemaFields[] = array(
+            'name' => $field['name'],
+            'label' => $field['label'],
+            'type' => $field['type'],
+            'required' => !empty($field['is_required']),
+            'options' => forms_parse_options($field['options']),
+            'placeholder' => $field['placeholder'],
+            'help_text' => $field['help_text']
+        );
+    }
+
+    $output = array(
+        'schema' => 1,
+        'id' => (int) $form['id'],
+        'slug' => $form['slug'],
+        'title' => $form['title'],
+        'description' => $form['description'],
+        'url' => $_CONF['site_url'] . '/forms/index.php?f=' . rawurlencode($form['slug']),
+        'allow_anonymous' => !empty($form['allow_anonymous']),
+        'fields' => $schemaFields,
+        'created' => (int) $form['created'],
+        'modified' => (int) $form['modified']
+    );
+
+    return true;
+}
+
+/**
+ * Provider-owned administration summary consumed generically by Eclipse.
+ */
+function service_dashboard_summary_forms($args, &$output, &$svc_msg)
+{
+    global $_CONF, $_TABLES;
+
+    $output = array();
+    $svc_msg = '';
+
+    if (!SEC_hasRights('forms.admin')) {
+        $svc_msg = 'Access denied.';
+        return false;
+    }
+
+    $formsTotal = (int) DB_count($_TABLES['forms_definitions']);
+    $formsActive = (int) DB_count($_TABLES['forms_definitions'], 'is_active', 1);
+
+    $submissionsTotal = 0;
+    $result = DB_query("SELECT COUNT(*) AS total FROM {$_TABLES['forms_submissions']}", 1);
+    if (!DB_error() && DB_numRows($result) > 0) {
+        $row = DB_fetchArray($result);
+        $submissionsTotal = (int) $row['total'];
+    }
+
+    $output = array(
+        'schema' => 1,
+        'status' => 'ok',
+        'metrics' => array(
+            array('id' => 'forms', 'label' => 'Forms', 'value' => $formsTotal),
+            array('id' => 'active', 'label' => 'Active forms', 'value' => $formsActive),
+            array('id' => 'submissions', 'label' => 'Stored submissions', 'value' => $submissionsTotal)
+        ),
+        'alerts' => array(),
+        'links' => array(
+            array(
+                'label' => 'Manage Forms',
+                'url' => $_CONF['site_admin_url'] . '/plugins/forms/index.php'
+            )
+        ),
+        'updated' => time()
+    );
+
+    return true;
+}
+
 function plugin_getversion_forms()
 {
-    return '0.3.2';
+    return '1.0.0';
 }
 
 function plugin_chkVersion_forms()
 {
-    return '0.3.2';
+    return '1.0.0';
 }
 
 function plugin_autouninstall_forms()
@@ -467,9 +639,9 @@ function plugin_upgrade_forms()
         return false;
     }
 
-    DB_query("UPDATE {$_TABLES['plugins']} SET pi_version = '0.3.2', pi_gl_version = '2.1.1' WHERE pi_name = 'forms'", 1);
+    DB_query("UPDATE {$_TABLES['plugins']} SET pi_version = '1.0.0', pi_gl_version = '2.1.1' WHERE pi_name = 'forms'", 1);
     if (DB_error()) {
-        COM_errorLog('Forms Plugin: failed to update plugin metadata to 0.3.2.');
+        COM_errorLog('Forms Plugin: failed to update plugin metadata to 1.0.0.');
         return false;
     }
 
