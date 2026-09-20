@@ -40,4 +40,8 @@ The exposed form-list and form-schema services are read-only and deliberately ex
 
 ## Upgrade
 
-Existing 0.x installations can use Geeklog's normal plugin upgrade flow. The upgrade refreshes Forms configuration and updates the registered plugin version to 1.0.0 without changing the existing Forms data model.
+Existing 0.x installations can use Geeklog's normal plugin upgrade flow from `admin/plugins.php`.
+
+The 1.0.0 upgrade now explicitly reads the installed data version, validates the upgrade direction and compatibility, repairs Forms configuration, updates Geeklog's registered `pi_version` / `pi_gl_version`, and verifies that the new data version was recorded successfully.
+
+No persistent Forms table schema change is required between 0.3.2 and 1.0.0.
