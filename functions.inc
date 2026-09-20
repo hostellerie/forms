@@ -613,7 +613,12 @@ function plugin_getversion_forms()
 
 function plugin_chkVersion_forms()
 {
-    return '1.0.0';
+    global $_CONF;
+
+    require_once $_CONF['path'] . 'plugins/forms/autoinstall.php';
+    $inst_parms = plugin_autoinstall_forms('forms');
+
+    return $inst_parms['info']['pi_version'];
 }
 
 function plugin_autouninstall_forms()
@@ -632,18 +637,84 @@ function plugin_upgrade_forms()
 {
     global $_CONF, $_TABLES;
 
+    require_once $_CONF['path'] . 'plugins/forms/autoinstall.php';
     require_once $_CONF['path_system'] . 'classes/config.class.php';
     require_once $_CONF['path'] . 'plugins/forms/install_defaults.php';
 
-    if (!plugin_initconfig_forms()) {
+    $installedVersion = DB_getItem(
+        $_TABLES['plugins'],
+        'pi_version',
+        "pi_name = 'forms'"
+    );
+    $codeVersion = plugin_chkVersion_forms();
+
+    if ($installedVersion === $codeVersion) {
+        return true;
+    }
+
+    if ($installedVersion === ''
+        || version_compare($installedVersion, $codeVersion, '>')) {
+        COM_errorLog(
+            'Forms Plugin: unsupported upgrade direction from '
+            . $installedVersion . ' to ' . $codeVersion . '.'
+        );
         return false;
     }
 
-    DB_query("UPDATE {$_TABLES['plugins']} SET pi_version = '1.0.0', pi_gl_version = '2.1.1' WHERE pi_name = 'forms'", 1);
-    if (DB_error()) {
-        COM_errorLog('Forms Plugin: failed to update plugin metadata to 1.0.0.');
+    if (!plugin_compatible_with_this_version_forms('forms')) {
+        return 3002;
+    }
+
+    /*
+     * Forms 1.0.0 does not change the persistent form/submission schema from
+     * 0.3.2. The upgrade is nevertheless explicit so Geeklog can move the
+     * registered data version forward only after configuration repair succeeds.
+     */
+    if (!plugin_initconfig_forms()) {
+        COM_errorLog(
+            'Forms Plugin: configuration migration failed while upgrading from '
+            . $installedVersion . ' to ' . $codeVersion . '.'
+        );
         return false;
     }
+
+    $instParms = plugin_autoinstall_forms('forms');
+    $glVersion = $instParms['info']['pi_gl_version'];
+    $safeCodeVersion = DB_escapeString($codeVersion);
+    $safeGlVersion = DB_escapeString($glVersion);
+
+    $updated = DB_query(
+        "UPDATE {$_TABLES['plugins']} "
+        . "SET pi_version = '{$safeCodeVersion}', "
+        . "pi_gl_version = '{$safeGlVersion}' "
+        . "WHERE pi_name = 'forms'",
+        1
+    );
+    if (!$updated || DB_error()) {
+        COM_errorLog(
+            'Forms Plugin: failed to record upgraded version '
+            . $codeVersion . '.'
+        );
+        return false;
+    }
+
+    $recordedVersion = DB_getItem(
+        $_TABLES['plugins'],
+        'pi_version',
+        "pi_name = 'forms'"
+    );
+    if ($recordedVersion !== $codeVersion) {
+        COM_errorLog(
+            'Forms Plugin: upgrade completed but pi_version was not updated '
+            . 'to ' . $codeVersion . '.'
+        );
+        return false;
+    }
+
+    COM_errorLog(
+        'Forms Plugin: upgrade completed from '
+        . $installedVersion . ' to ' . $codeVersion . '.'
+    );
 
     return true;
 }
