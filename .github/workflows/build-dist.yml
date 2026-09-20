@@ -55,7 +55,10 @@ jobs:
           cp functions.inc "$BUILD_DIR/forms/"
           cp install_defaults.php "$BUILD_DIR/forms/"
           cp plugin.xml "$BUILD_DIR/forms/"
+          cp plugin.json "$BUILD_DIR/forms/"
           cp README.md "$BUILD_DIR/forms/"
+          cp ROADMAP.md "$BUILD_DIR/forms/"
+          cp RELEASE-NOTES.md "$BUILD_DIR/forms/"
           cp LICENSE "$BUILD_DIR/forms/"
 
           rm -f "dist/forms-${VERSION}.zip"
@@ -69,6 +72,12 @@ jobs:
 
           # Fail if the package does not have the required forms/ root folder.
           unzip -Z1 "dist/forms-${VERSION}.zip" | grep -q '^forms/'
+
+          # Geeklog 2.2.2 rejects dot-prefixed files in plugin archives.
+          if unzip -Z1 "dist/forms-${VERSION}.zip" | awk -F/ '{for (i=1; i<=NF; i++) if ($i ~ /^\./) exit 0} END {exit 1}'; then
+            echo "Archive contains a dot-prefixed path, which is not allowed." >&2
+            exit 1
+          fi
 
       - name: Publish archive as workflow artifact
         uses: actions/upload-artifact@v4
