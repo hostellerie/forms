@@ -1,94 +1,60 @@
-# Forms for Geeklog 0.3.2
+# Forms for Geeklog 1.0.0
 
-Experimental first test release of an independent form builder for Geeklog.
+Forms is an independent form builder for Geeklog with reusable form definitions, stored submissions, email notifications and a shared interoperability surface for modern Geeklog consumers.
 
-## Compatibility target
+## Compatibility
 
 - Geeklog 2.1.1 through 2.2.2
-- PHP 5.6 through PHP 8.x (code intentionally avoids syntax newer than PHP 5.6)
+- PHP 5.6 through PHP 8.x
 - MySQL / mysqli
 
-## 0.2.1 features
+## Main features
 
-- Independent plugin: no dependency on nexPro, nexForm, Formmail, Contact or Polls.
-- Create multiple forms.
-- Field types: text, email, textarea, select, radio, checkbox, date and number.
-- Required fields, ordering, placeholder and help text.
+- Create and manage multiple forms.
+- Field types: text, email, textarea, select, radio, checkbox, multiple checkboxes, date, time, date/time, number, phone, URL, consent, heading and informational text.
+- Required fields, ordering, placeholders and help text.
 - Anonymous submissions can be enabled or disabled per form.
 - Store submissions in the database or disable storage.
 - Optional email notification per form.
 - Honeypot and minimum-fill-time anti-spam protection.
-- Uses Geeklog CSRF tokens and Spam-X integration when available.
-- No public catalogue: forms are exposed only by explicit URL or autotag.
-- Administration list, form editor, field editor and latest submissions view.
+- Geeklog CSRF token protection and Spam-X integration when available.
+- Forms are exposed only by explicit URL or the `[forms:slug]` autotag; there is no public catalogue.
+- Administration list, form editor, field editor and stored submission views.
+- Starter templates for Contact, Feedback, Event registration, Support request and Quote request.
+- CSV export of stored submissions.
 - English and French language files.
+
+## Interoperability in 1.0.0
+
+Forms follows the shared contracts documented in the Geeklog memorandum.
+
+It declares the service role and these capabilities through `plugin_getcapabilities_forms()`:
+
+- `forms.list`
+- `forms.schema.read`
+- `dashboard.summary`
+
+The corresponding bounded services allow Agent, Hub, Eclipse and future consumers to discover active forms, read a form schema and display administration metrics without querying Forms private tables.
+
+Stored submission values, recipients, IP hashes and user-agent data are deliberately not exposed by the public capability declaration.
 
 ## Installation
 
-Install the ZIP from Geeklog's Plugins administration page.
+Install `forms-1.0.0.zip` from Geeklog's Plugins administration page.
 
-After installation open Command and Control > Forms.
+After installation open **Command and Control > Forms**:
 
 1. Create a form.
 2. Save it.
-3. Reopen the form and add fields in its editor.
-4. Use the public URL or embed it with `[forms:slug]`.
+3. Reopen the form and add fields.
+4. Use its public URL or embed it with `[forms:slug]`.
 
-## Important test-release limitations
+## Security and privacy
 
-This is deliberately a focused 0.3.1 test foundation. It does not yet include file uploads, conditional logic, multi-page forms, import/export of form definitions, per-form Geeklog ACLs, advanced reporting, Poll-style vote controls, or a visual drag-and-drop builder.
+Email uses the Geeklog site address as the sender for deliverability. A visitor email entered in the form is included in the message body and is not spoofed as the SMTP From address.
 
-Email uses the Geeklog site address as the sender for deliverability. A visitor email entered in the form is included in the message body; it is not spoofed as the SMTP From address.
+The 1.0 interoperability services expose form-definition metadata only. Submission data remains under Forms administration permissions.
 
-## Suggested tests
+## Release documentation
 
-- Install/uninstall on Geeklog 2.1.1 + PHP 5.6.
-- Install/uninstall on Geeklog 2.2.2 + PHP 8.1/8.3.
-- Anonymous and authenticated submissions.
-- Store-only, email-only, and store+email forms.
-- Required fields and invalid email validation.
-- Spam honeypot and fast-submit rejection.
-- French and English UI.
-
-
-## 0.2.1 highlights
-
-- Explicit required-field legend and localized validation messages.
-- `[forms:slug]` autotag to embed active forms in Geeklog content.
-- Contact and Feedback starter templates.
-- Duplicate forms and fields.
-- Move fields up/down directly from the editor.
-- Friendlier select/radio options: one visible label per line is enough; `value|Label` remains supported.
-- CSV export of stored submissions (UTF-8, semicolon separated).
-- Localized field type names and clearer editor help.
-
-
-## 0.2.1 admin usability
-
-- Getting-started documentation on the Forms administration home page.
-- Reorganized form editor with Identity, Behaviour, Fields, and Stored submissions sections.
-- Direct preview, public URL, and autotag guidance in the editor.
-- Contextual help for each important form and field setting.
-
-
-## 0.3.1 additions
-
-- New field types: phone, URL, time, date/time, multiple checkboxes, required consent, heading and informational text.
-- Detailed submission view with visitor/user information and labelled values.
-- Secure individual submission deletion with Geeklog CSRF tokens.
-- Getting Started documentation moved below the daily administration area.
-
-
-## 0.3.1
-
-- The template area is permanently visible on the Forms administration page.
-- Added demo templates: Event registration, Support request and Quote request, alongside Contact and Feedback.
-- Template cards explain the purpose of each example before creation.
-- Improved hover/focus contrast for administration buttons to remain readable with dark Geeklog themes.
-
-
-## 0.3.2
-
-- More compact template cards.
-- Smaller Create/Créer buttons for starter templates.
-- Hover/focus contrast retained for dark administration themes.
+See [RELEASE-NOTES.md](RELEASE-NOTES.md) for the 1.0.0 release notes and [ROADMAP.md](ROADMAP.md) for planned work.
