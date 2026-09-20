@@ -74,7 +74,7 @@ jobs:
           unzip -Z1 "dist/forms-${VERSION}.zip" | grep -q '^forms/'
 
           # Geeklog 2.2.2 rejects dot-prefixed files in plugin archives.
-          if unzip -Z1 "dist/forms-${VERSION}.zip" | awk -F/ '{for (i=1; i<=NF; i++) if ($i ~ /^\./) exit 0} END {exit 1}'; then
+          if unzip -Z1 "dist/forms-${VERSION}.zip" | grep -Eq '(^|/)\.'; then
             echo "Archive contains a dot-prefixed path, which is not allowed." >&2
             exit 1
           fi
